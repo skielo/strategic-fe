@@ -1,6 +1,7 @@
-import { FC, useState, useEffect } from 'react';
+import { FC, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { fetchWithAuth } from '../utils/api';
 
 interface Goal {
   id: number;
@@ -14,6 +15,7 @@ const Goals: FC = () => {
   const [goal, setGoal] = useState<Goal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const router = useRouter();
   const { id } = router.query;
   const idString = Array.isArray(id) ? id[0] : id;
@@ -24,7 +26,7 @@ const Goals: FC = () => {
     fetchGoal();
   }, [idString]);
 
-  const fetchGoal = async () => {
+  const fetchGoal = useCallback(async () => {
     if (!idString) {
       setError('No goal selected');
       setIsLoading(false);
@@ -32,7 +34,7 @@ const Goals: FC = () => {
     }
     try {
       setIsLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/goals/all`, { cache: 'no-store' });
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/goals/all`, { cache: 'no-store' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -45,13 +47,13 @@ const Goals: FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [idString]);
 
   const handleUpdateGoal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editedGoal) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/goals/${editedGoal.id}`, {
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/goals/${editedGoal.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editedGoal),
@@ -69,7 +71,7 @@ const Goals: FC = () => {
   const handleDeleteGoal = async () => {
     if (!goal) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/goals/${goal.id}`, {
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/goals/${goal.id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -91,12 +93,14 @@ const Goals: FC = () => {
     return (
       <div>
         <p className="text-red-500">{error}</p>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="bg-blue-500 text-white p-2 rounded mt-4"
-        >
-          Create New Goal
-        </button>
+        {!goal && (
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="bg-blue-500 text-white p-2 rounded mt-4"
+          >
+            Create New Goal
+          </button>
+        )}
       </div>
     );
   }
@@ -162,6 +166,96 @@ const Goals: FC = () => {
           >
             Create New Goal
           </button>
+        </div>
+      )}
+
+      {showCreateForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h2 className="text-2xl font-bold mb-4">Create New Goal</h2>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const formData = new FormData(form);
+              
+              try {
+                const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/goals`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    name: formData.get('name'),
+                    description: formData.get('description'),
+                    currentValue: Number(formData.get('currentValue')),
+                    targetValue: Number(formData.get('targetValue')),
+                  }),
+                });
+
+                if (!response.ok) {
+                  throw new Error('Failed to create goal');
+                }
+
+                const newGoal = await response.json();
+                setGoal(newGoal);
+                setShowCreateForm(false);
+                form.reset();
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'An error occurred while creating the goal');
+              }
+            }}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <textarea
+                  name="description"
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">Current Value</label>
+                <input
+                  type="number"
+                  name="currentValue"
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">Target Value</label>
+                <input
+                  type="number"
+                  name="targetValue"
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(false)}
+                  className="bg-gray-500 text-white p-2 rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-500 text-white p-2 rounded"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 import { FC, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { fetchWithAuth } from '../utils/api';
 
 interface Objective {
   id: number;
@@ -39,7 +40,7 @@ const Objectives: FC = () => {
     }
     try {
       setIsLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/themes/${themeIdString}/objectives/all`, { cache: 'no-store' });
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/themes/${themeIdString}/objectives/all`, { cache: 'no-store' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -57,7 +58,7 @@ const Objectives: FC = () => {
     e.preventDefault();
     if (!themeIdString) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/themes/${themeIdString}/objectives`, {
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/themes/${themeIdString}/objectives`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newObjective),
@@ -76,7 +77,7 @@ const Objectives: FC = () => {
     e.preventDefault();
     if (!editingObjective) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/objectives/${editingObjective.id}`, {
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/objectives/${editingObjective.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingObjective),
@@ -93,7 +94,7 @@ const Objectives: FC = () => {
 
   const handleDeleteObjective = async (id: number) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/objectives/${id}`, {
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/objectives/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {

@@ -1,6 +1,7 @@
 import { FC, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { fetchWithAuth } from '../utils/api';
 
 interface KeyResult {
   id: number;
@@ -22,6 +23,7 @@ const KeyResults: FC = () => {
   const [keyResult, setKeyResult] = useState<KeyResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [, setShowCreateForm] = useState(false);
   const router = useRouter();
   const { id } = router.query;
   const idString = Array.isArray(id) ? id[0] : id;
@@ -36,7 +38,7 @@ const KeyResults: FC = () => {
       try {
         setIsLoading(true);
         // TODO: Replace with actual API call
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/key-results/all`, { cache: 'no-store' });
+        const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/key-results/all`, { cache: 'no-store' });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

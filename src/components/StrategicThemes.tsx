@@ -1,5 +1,7 @@
+"use client"
 import { FC, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { fetchWithAuth } from '../utils/api';
 
 interface StrategicTheme {
   id: number;
@@ -29,7 +31,7 @@ const StrategicThemes: FC = () => {
   const fetchThemes = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/strategic-themes/all`, { cache: 'no-store' });
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/strategic-themes`, { cache: 'no-store' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -46,7 +48,7 @@ const StrategicThemes: FC = () => {
   const handleCreateTheme = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/strategic-themes`, {
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/strategic-themes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTheme),
@@ -65,7 +67,7 @@ const StrategicThemes: FC = () => {
     e.preventDefault();
     if (!editingTheme) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/strategic-themes/${editingTheme.id}`, {
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/strategic-themes/${editingTheme.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingTheme),
@@ -82,7 +84,7 @@ const StrategicThemes: FC = () => {
 
   const handleDeleteTheme = async (id: number) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/strategic-themes/${id}`, {
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_BASE_URL}/strategic-themes/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
